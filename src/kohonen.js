@@ -49,6 +49,7 @@ var Kohonen = function (dimension) {
                 return Math.sqrt(total);
             }
         }
+        
         /// Adjust weights
         // AdjustWeights : function () {
         //     // something here
@@ -64,6 +65,15 @@ var Kohonen = function (dimension) {
                 };
             });
         });
+    };
+
+    /// pass and Id and returns a neuron reference
+    this.getNeuronById = function (neuronId) {
+        for (var i = 0 ; i < this.neurons.length ; i++){
+            if (this.neurons[i].id === neuronId) {
+                return this.neurons[i];
+            }
+        }
     };
 
     /// Function that creates a new neuron and adds it tho the Kohonen Network. receives an integer id, an array of weights for the dimension and an array of neighboursId
@@ -85,11 +95,41 @@ var Kohonen = function (dimension) {
         }
     };
 
-    
+    //function that changes a given array of neurons
+    this.setNewWeights = function (neuronIdArray, learningRate, point) {
+        neuronIdArray.forEach((neuronId) => {
+            var neuron = this.getNeuronById(neuronId);
+            for (var i = 0 ; i < dimension ; i++) {
+                neuron.weight[i] = neuron.weight[i] + learningRate * (point[i] - neuron.weight[i]);
+            }
+        });
+        
+        // neuron.w[i] = neuron.w[i] + tx * (point[i] - neuron.w[i])
+    }
+
+    // function that finds all neurons to 
+    this.Recalibrate = function (winnerId, neighbourhood, learningRate, point) {
+        var neuronsToUpdate = [];
+        var consultedNeurons = [];
+        neuronsToUpdate.push(winnerId);
+        for (var i = 0 ; i < neighbourhood ; i++) {
+            neuronsToUpdate.forEach((n) => {
+                var thisNeuron = this.getNeuronById(n);
+                thisNeuron.neighboursId.forEach((nId) => {
+                    if(!neuronsToUpdate.includes(nId)){
+                        neuronsToUpdate.push(nId);
+                    }
+                });
+                consultedNeurons.push(n);
+            });
+        }
+        console.log('Updating neurons', neuronsToUpdate);
+        this.setNewWeights(neuronsToUpdate, learningRate, point);
+    }
     /// Function that receives training set and sets it
     
     /// Function that receives all training set and train
-    this.Train = function (trainingSet) {
+    this.Train = function (trainingSet, learningRate, neighbourhood) {
         if (!(Array.isArray(trainingSet))) throw Error ('Training set must be a bidimensional Array.');
         var winner = 0, higher = Number.MAX_SAFE_INTEGER;       
 
@@ -104,9 +144,11 @@ var Kohonen = function (dimension) {
                 }
             });
             console.log('Neuron ' + winner + ' is BMU for point [' + point + '] with distance of ' + closestDistance);
-            // call function: reorganize(winner);
+            this.Recalibrate(winner, neighbourhood, learningRate, point);
         });
     }
+
+    
 
     /// Function that prints the Kohonen Network's State
     this.Print = function () {
@@ -119,10 +161,14 @@ var Kohonen = function (dimension) {
 
 module.exports = Kohonen;
 
-/*
-
+/* 
 peso novo = peso anterior + taxa de aprendizado * funcao de vizinhanca * diferenca entre feature e peso
+    neuron.w[i] = neuron.w[i] + tx * isVizinho() * (point[i] - neuron.w[i])
 
-funcao de vizinhanca: grau de vizinhanca
+    atual: 
+    para cada um na lista de vizinhos, atualizar
+    neuron.w[i] = neuron.w[i] + tx * (point[i] - neuron.w[i])
+
+    funcao de vizinhanca: grau de vizinhanca: Retorna true ou false.
 
 */

@@ -14,11 +14,16 @@ som.AddNeuron(6, [10,30], [3]);
 som.AddNeuron(7, [20,30], [4,6]);
 som.AddNeuron(8, [30,30], [5,7]);
 
-som.Train([
+var dataset = [
     [28,27],
     [29,9],
     [16,16]
-]);
+],
+tx_aprendizado = 0.5,
+gr_vizinhanca = 1;
 
-//som.Print();
+
+som.Train(dataset, tx_aprendizado, gr_vizinhanca);
+
+som.Print();
 
