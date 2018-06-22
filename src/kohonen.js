@@ -1,9 +1,10 @@
+const fs = require ('fs');
+
 var Kohonen = function (dimension) {
     // private variables
     this.dimension = dimension;
     this.neuronsId = [];
     this.neurons = [];
-    //this.trainingSet = [];
 
     //NEURON DEFINITION
     this.Neuron = function(id, weight, neighboursId, neuronsId) {
@@ -67,7 +68,7 @@ var Kohonen = function (dimension) {
         });
     };
 
-    /// pass and Id and returns a neuron reference
+    /// pass an Id and returns a neuron object reference
     this.getNeuronById = function (neuronId) {
         for (var i = 0 ; i < this.neurons.length ; i++){
             if (this.neurons[i].id === neuronId) {
@@ -103,11 +104,9 @@ var Kohonen = function (dimension) {
                 neuron.weight[i] = neuron.weight[i] + learningRate * (point[i] - neuron.weight[i]);
             }
         });
-        
-        // neuron.w[i] = neuron.w[i] + tx * (point[i] - neuron.w[i])
     }
 
-    // function that finds all neurons to 
+    // function that finds all neurons to update
     this.Recalibrate = function (winnerId, neighbourhood, learningRate, point) {
         var neuronsToUpdate = [];
         var consultedNeurons = [];
@@ -126,12 +125,11 @@ var Kohonen = function (dimension) {
         console.log('Updating neurons', neuronsToUpdate);
         this.setNewWeights(neuronsToUpdate, learningRate, point);
     }
-    /// Function that receives training set and sets it
     
     /// Function that receives all training set and train
     this.Train = function (trainingSet, learningRate, neighbourhood) {
         if (!(Array.isArray(trainingSet))) throw Error ('Training set must be a bidimensional Array.');
-        var winner = 0, higher = Number.MAX_SAFE_INTEGER;       
+        var winner = 0, higher = Number.MAX_SAFE_INTEGER;
 
         trainingSet.forEach((point) => {
             var winner = 0, closestDistance = Number.MAX_SAFE_INTEGER, distance = 0;
@@ -148,27 +146,88 @@ var Kohonen = function (dimension) {
         });
     }
 
-    
+    // Function that receives the dataset and groups them to clusters.
+    this.Cluster = function (dataSet) {
+        if (!(Array.isArray(dataSet))) throw Error ('Data set must be a W-length-dimensional Array. Your W-length is', this.dimension);
+        var winner = 0, higher = Number.MAX_SAFE_INTEGER;
+
+        var clusters = [];
+        for (var i = 0 ; i < this.neuronsId.length ; i++){
+            clusters.push({ cluster_id: this.neuronsId[i], data: []});
+        }
+        
+        dataSet.forEach((point) => {
+            var winner = 0, closestDistance = Number.MAX_SAFE_INTEGER, distance = 0;
+
+            this.neurons.forEach((neuron) => {
+                distance = neuron.Euclides(point);
+                if(distance < closestDistance){
+                    winner = neuron.id;
+                    closestDistance = distance;
+                }
+            });
+            var i = 0;
+            for (i = 0 ; i < this.neuronsId.length ; i++){
+                if (this.neuronsId[i] === winner) {
+                    clusters[i].data.push(point);
+                    break;
+                }
+            }
+
+            console.log('Point [' + point + '] belongs to Cluster ' + i);
+        });
+        return clusters;
+    }
 
     /// Function that prints the Kohonen Network's State
     this.Print = function () {
         this.neurons.forEach((x) => {
-            console.log(x);
+            console.log({
+                Neuron_ID: x.id,
+                Weight: x.weight,
+                Neighbours: x.neighboursId
+            });
             console.log('=========================');
         });
+    };
+
+    // this.getNeuronArray = function () {
+    //     return this.neurons;
+    // }
+
+    this.findNeuronInPosition = function (x, y) {
+        var returnValue = null;
+        this.neurons.forEach((n) => {
+            if ((Math.floor(n.weight[0] + 0.5)) === x && (Math.floor(n.weight[1] + 0.5)) === y) {
+                returnValue = n.id;
+            }
+        });
+        return returnValue;
+    };
+    
+    this.writeGraphic = function (xr, yt, xl, yb) {
+        canvas = { xr: xr, yt: yt, xl: xl || 0, yb: yb || 0 };
+        var g = '\n';
+
+        for (var i = canvas.yt ; i > canvas.yb ; i--){
+            for (var j = canvas.xl ; j < canvas.xr ; j++){
+                
+                var neuronId = this.findNeuronInPosition(j, i);
+                if(neuronId != null){
+                    console.log('#',neuronId,'#');
+                    g +=( '[' + neuronId.toString() + ']' );
+                } else {
+                    g += '[ ]';
+                }
+            }
+            g+= '\n';
+        }
+        // add each neuron label and weights.
+        console.log(g);
+
+        //save to file
+        fs.writeFileSync('./graphic.dat', g);
     };
 }
 
 module.exports = Kohonen;
-
-/* 
-peso novo = peso anterior + taxa de aprendizado * funcao de vizinhanca * diferenca entre feature e peso
-    neuron.w[i] = neuron.w[i] + tx * isVizinho() * (point[i] - neuron.w[i])
-
-    atual: 
-    para cada um na lista de vizinhos, atualizar
-    neuron.w[i] = neuron.w[i] + tx * (point[i] - neuron.w[i])
-
-    funcao de vizinhanca: grau de vizinhanca: Retorna true ou false.
-
-*/
